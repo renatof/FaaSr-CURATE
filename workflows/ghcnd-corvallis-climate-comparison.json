@@ -16,6 +16,21 @@
         "output2": "ten_year_daily_averages.csv"
       },
       "InvokeNext": [
+        "fill-climate-gaps"
+      ]
+    },
+    "fill-climate-gaps": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "fill_climate_gaps",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "current_year_observations.csv",
+        "input2": "ten_year_daily_averages.csv",
+        "output1": "filled_current_year_observations.csv",
+        "output2": "filled_ten_year_daily_averages.csv"
+      },
+      "InvokeNext": [
         "plot-climate-variable(3)"
       ]
     },
@@ -25,8 +40,8 @@
       "FunctionName": "plot_climate_variable",
       "Arguments": {
         "folder": "workflow_data",
-        "input1": "current_year_observations.csv",
-        "input2": "ten_year_daily_averages.csv",
+        "input1": "filled_current_year_observations.csv",
+        "input2": "filled_ten_year_daily_averages.csv",
         "output1": "climate_variable_plot_{rank}.png"
       },
       "InvokeNext": []
@@ -34,6 +49,7 @@
   },
   "ActionContainers": {
     "download-ghcnd-data": "ghcr.io/faasr/github-actions-python:latest",
+    "fill-climate-gaps": "ghcr.io/faasr/github-actions-python:latest",
     "plot-climate-variable": "ghcr.io/faasr/github-actions-python:latest"
   },
   "ComputeServers": {
@@ -57,12 +73,17 @@
   },
   "FunctionGitRepo": {
     "download_ghcnd_data": "renatof/FaaSr-CURATE/main/functions/download_ghcnd_data.py",
+    "fill_climate_gaps": "renatof/FaaSr-CURATE/main/functions/fill_climate_gaps.py",
     "plot_climate_variable": "renatof/FaaSr-CURATE/main/functions/plot_climate_variable.py"
   },
   "PyPIPackageDownloads": {
     "download_ghcnd_data": [
       "meteostat",
       "pandas"
+    ],
+    "fill_climate_gaps": [
+      "pandas",
+      "scipy"
     ],
     "plot_climate_variable": [
       "matplotlib",
