@@ -1,0 +1,70 @@
+{
+  "FunctionInvoke": "generate-temperature-data",
+  "WorkflowName": "temperature-histogram-workflow",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "generate-temperature-data": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "generate_temperature_data",
+      "Arguments": {
+        "folder": "workflow_data",
+        "output1": "temperature_data.csv"
+      },
+      "InvokeNext": [
+        "plot-temperature-histogram"
+      ]
+    },
+    "plot-temperature-histogram": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_temperature_histogram",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "temperature_data.csv",
+        "output1": "temperature_histogram.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "generate-temperature-data": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-temperature-histogram": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "generate_temperature_data": "renatof/FaaSr-CURATE/main/functions/generate_temperature_data.py",
+    "plot_temperature_histogram": "renatof/FaaSr-CURATE/main/functions/plot_temperature_histogram.py"
+  },
+  "PyPIPackageDownloads": {
+    "generate_temperature_data": [
+      "numpy",
+      "pandas"
+    ],
+    "plot_temperature_histogram": [
+      "pandas",
+      "matplotlib"
+    ]
+  }
+}
