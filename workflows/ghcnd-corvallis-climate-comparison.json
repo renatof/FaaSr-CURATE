@@ -1,0 +1,72 @@
+{
+  "FunctionInvoke": "download-ghcnd-data",
+  "WorkflowName": "ghcnd-corvallis-climate-comparison",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "download-ghcnd-data": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "download_ghcnd_data",
+      "Arguments": {
+        "folder": "workflow_data",
+        "output1": "current_year_observations.csv",
+        "output2": "ten_year_daily_averages.csv"
+      },
+      "InvokeNext": [
+        "plot-climate-variable(3)"
+      ]
+    },
+    "plot-climate-variable": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_climate_variable",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "current_year_observations.csv",
+        "input2": "ten_year_daily_averages.csv",
+        "output1": "climate_variable_plot_{rank}.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "download-ghcnd-data": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-climate-variable": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "download_ghcnd_data": "renatof/FaaSr-CURATE/main/functions/download_ghcnd_data.py",
+    "plot_climate_variable": "renatof/FaaSr-CURATE/main/functions/plot_climate_variable.py"
+  },
+  "PyPIPackageDownloads": {
+    "download_ghcnd_data": [
+      "meteostat",
+      "pandas"
+    ],
+    "plot_climate_variable": [
+      "matplotlib",
+      "pandas"
+    ]
+  }
+}
