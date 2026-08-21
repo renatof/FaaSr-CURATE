@@ -1,0 +1,109 @@
+{
+  "FunctionInvoke": "download-gbif-records",
+  "WorkflowName": "gbif-castor-canadensis-oregon",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "download-gbif-records": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "download_gbif_records",
+      "Arguments": {
+        "folder": "workflow_data",
+        "output1": "castor_canadensis_raw.csv"
+      },
+      "InvokeNext": [
+        "summarize-coordinates"
+      ]
+    },
+    "summarize-coordinates": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "summarize_coordinates",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "castor_canadensis_raw.csv",
+        "output1": "coordinate_summary.csv"
+      },
+      "InvokeNext": [
+        "filter-oregon-records"
+      ]
+    },
+    "filter-oregon-records": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "filter_oregon_records",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "castor_canadensis_raw.csv",
+        "output1": "castor_canadensis_oregon.csv"
+      },
+      "InvokeNext": [
+        "map-oregon-observations"
+      ]
+    },
+    "map-oregon-observations": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "map_oregon_observations",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "castor_canadensis_oregon.csv",
+        "output1": "castor_canadensis_oregon_map.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "download-gbif-records": "ghcr.io/faasr/github-actions-python:latest",
+    "summarize-coordinates": "ghcr.io/faasr/github-actions-python:latest",
+    "filter-oregon-records": "ghcr.io/faasr/github-actions-python:latest",
+    "map-oregon-observations": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "download_gbif_records": "renatof/FaaSr-CURATE/main/functions/download_gbif_records.py",
+    "summarize_coordinates": "renatof/FaaSr-CURATE/main/functions/summarize_coordinates.py",
+    "filter_oregon_records": "renatof/FaaSr-CURATE/main/functions/filter_oregon_records.py",
+    "map_oregon_observations": "renatof/FaaSr-CURATE/main/functions/map_oregon_observations.py"
+  },
+  "PyPIPackageDownloads": {
+    "download_gbif_records": [
+      "pygbif",
+      "pandas"
+    ],
+    "summarize_coordinates": [
+      "pandas"
+    ],
+    "filter_oregon_records": [
+      "pandas"
+    ],
+    "map_oregon_observations": [
+      "matplotlib",
+      "pandas",
+      "contextily",
+      "geopandas",
+      "shapely"
+    ]
+  }
+}
