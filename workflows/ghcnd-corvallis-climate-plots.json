@@ -1,0 +1,75 @@
+{
+  "FunctionInvoke": "download-ghcnd-data",
+  "WorkflowName": "ghcnd-corvallis-climate-plots",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "download-ghcnd-data": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "download_ghcnd_data",
+      "Arguments": {
+        "folder": "workflow_data",
+        "output1": "current_year_daily.csv",
+        "output2": "tenyear_average_daily.csv"
+      },
+      "InvokeNext": [
+        "create-climate-plot(3)"
+      ]
+    },
+    "create-climate-plot": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "create_climate_plot",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "current_year_daily.csv",
+        "input2": "tenyear_average_daily.csv",
+        "output1": "climate_plot_{rank}.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "download-ghcnd-data": "ghcr.io/faasr/github-actions-python:latest",
+    "create-climate-plot": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "download_ghcnd_data": "renatof/FaaSr-CURATE/main/functions/download_ghcnd_data.py",
+    "create_climate_plot": "renatof/FaaSr-CURATE/main/functions/create_climate_plot.py"
+  },
+  "PyPIPackageDownloads": {
+    "download_ghcnd_data": [
+      "meteostat",
+      "pandas"
+    ],
+    "create_climate_plot": [
+      "pandas",
+      "matplotlib"
+    ]
+  },
+  "Secrets": [
+    "NOAA_CDO_TOKEN"
+  ]
+}
