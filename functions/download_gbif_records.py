@@ -18,7 +18,7 @@ def download_gbif_records(folder: str, output1: str) -> None:
     faasr_log("Submitting GBIF bulk download request for Castor canadensis in Oregon")
 
     res = occ.download(
-        ["scientificName = 'Castor canadensis'", "stateProvince = 'Oregon'"],
+        ["taxonKey = 2438398", "stateProvince = Oregon"],
         user=gbif_user,
         pwd=gbif_pwd,
         email=gbif_email,
@@ -32,6 +32,11 @@ def download_gbif_records(folder: str, output1: str) -> None:
         status = meta.get("status", "UNKNOWN")
         faasr_log(f"Download status: {status}")
         if status == "SUCCEEDED":
+            total = meta.get("totalRecords", 0)
+            if total == 0:
+                msg = f"GBIF download succeeded but returned 0 records for taxonKey=2438398, stateProvince=Oregon (key: {download_key})"
+                faasr_log(msg)
+                raise RuntimeError(msg)
             break
         if status == "FAILED":
             msg = f"GBIF bulk download failed. Key: {download_key}"
