@@ -6,6 +6,7 @@ import tempfile
 import glob
 import pandas as pd
 from pygbif import occurrences as occ
+from pygbif import species
 
 
 def download_gbif_records(folder: str, output1: str) -> None:
@@ -15,10 +16,19 @@ def download_gbif_records(folder: str, output1: str) -> None:
 
     local_file = "castor_canadensis_raw.csv"
 
+    faasr_log("Resolving taxonKey for Castor canadensis via GBIF species backbone")
+    backbone = species.name_backbone("Castor canadensis", rank="SPECIES")
+    taxon_key = backbone.get("usageKey") or backbone.get("speciesKey")
+    if not taxon_key:
+        msg = "Could not resolve taxonKey for 'Castor canadensis' from GBIF species backbone"
+        faasr_log(msg)
+        raise RuntimeError(msg)
+    faasr_log(f"Resolved taxonKey: {taxon_key}")
+
     faasr_log("Submitting GBIF bulk download request for Castor canadensis in the US")
 
     res = occ.download(
-        ["taxonKey = 2438398", "country = US"],
+        [f"taxonKey = {taxon_key}", "country = US"],
         user=gbif_user,
         pwd=gbif_pwd,
         email=gbif_email,
@@ -34,7 +44,7 @@ def download_gbif_records(folder: str, output1: str) -> None:
         if status == "SUCCEEDED":
             total = meta.get("totalRecords", 0)
             if total == 0:
-                msg = f"GBIF download succeeded but returned 0 records for taxonKey=2438398, country=US (key: {download_key})"
+                msg = f"GBIF download succeeded but returned 0 records for taxonKey={taxon_key}, country=US (key: {download_key})"
                 faasr_log(msg)
                 raise RuntimeError(msg)
             break
