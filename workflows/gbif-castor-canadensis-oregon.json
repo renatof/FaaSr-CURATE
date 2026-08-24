@@ -105,5 +105,10 @@
       "geopandas",
       "shapely"
     ]
-  }
+  },
+  "Secrets": [
+    "GBIF_EMAIL",
+    "GBIF_PWD",
+    "GBIF_USER"
+  ]
 }
