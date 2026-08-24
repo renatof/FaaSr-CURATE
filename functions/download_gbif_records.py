@@ -20,9 +20,8 @@ def download_gbif_records(folder: str, output1: str) -> None:
     backbone = species.name_backbone("Castor canadensis")
     taxon_key = backbone.get("usageKey") or backbone.get("speciesKey") or backbone.get("acceptedUsageKey")
     if not taxon_key:
-        msg = "Could not resolve taxonKey for 'Castor canadensis' from GBIF species backbone"
-        faasr_log(msg)
-        raise RuntimeError(msg)
+        faasr_log("species.name_backbone() did not return a usageKey; falling back to hard-coded taxonKey 2439880 for Castor canadensis")
+        taxon_key = 2439880
     faasr_log(f"Resolved taxonKey: {taxon_key}")
 
     faasr_log("Submitting GBIF bulk download request for Castor canadensis in the US")
