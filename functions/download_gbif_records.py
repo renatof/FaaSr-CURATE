@@ -27,7 +27,7 @@ def download_gbif_records(folder: str, output1: str) -> None:
     faasr_log("Submitting GBIF bulk download request for Castor canadensis in the US")
 
     res = occ.download(
-        [occ.download_pred("taxonKey", taxon_key), occ.download_pred("country", "US")],
+        [{"type": "equals", "key": "TAXON_KEY", "value": taxon_key}, {"type": "equals", "key": "COUNTRY", "value": "US"}],
         user=gbif_user,
         pwd=gbif_pwd,
         email=gbif_email,
