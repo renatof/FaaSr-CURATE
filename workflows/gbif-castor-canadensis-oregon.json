@@ -15,7 +15,8 @@
         "output1": "castor_canadensis_raw.csv"
       },
       "InvokeNext": [
-        "summarize-coordinates"
+        "summarize-coordinates",
+        "filter-oregon-records"
       ]
     },
     "summarize-coordinates": {
@@ -27,9 +28,7 @@
         "input1": "castor_canadensis_raw.csv",
         "output1": "coordinate_summary.csv"
       },
-      "InvokeNext": [
-        "filter-oregon-records"
-      ]
+      "InvokeNext": []
     },
     "filter-oregon-records": {
       "FaaSServer": "GH",
