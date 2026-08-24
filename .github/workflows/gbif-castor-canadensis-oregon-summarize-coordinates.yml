@@ -19,6 +19,9 @@ jobs:
             GH_PAT: ${{ secrets.GH_PAT}}
             S3_AccessKey: ${{ secrets.S3_AccessKey}}
             S3_SecretKey: ${{ secrets.S3_SecretKey}}
+            GBIF_EMAIL: ${{ secrets.GBIF_EMAIL}}
+            GBIF_PWD: ${{ secrets.GBIF_PWD}}
+            GBIF_USER: ${{ secrets.GBIF_USER}}
             OVERWRITTEN: ${{ github.event.inputs.OVERWRITTEN }}
             PAYLOAD_URL: ${{ github.event.inputs.PAYLOAD_URL }}
 
