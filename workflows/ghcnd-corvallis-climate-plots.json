@@ -12,29 +12,29 @@
       "FunctionName": "download_ghcnd_data",
       "Arguments": {
         "folder": "workflow_data",
-        "output1": "current_year_daily.csv",
-        "output2": "tenyear_average_daily.csv"
+        "output1": "corvallis_current_year.csv",
+        "output2": "corvallis_10yr_average.csv"
       },
       "InvokeNext": [
-        "create-climate-plot(3)"
+        "generate-climate-plot(3)"
       ]
     },
-    "create-climate-plot": {
+    "generate-climate-plot": {
       "FaaSServer": "GH",
       "Type": "Python",
-      "FunctionName": "create_climate_plot",
+      "FunctionName": "generate_climate_plot",
       "Arguments": {
         "folder": "workflow_data",
-        "input1": "current_year_daily.csv",
-        "input2": "tenyear_average_daily.csv",
-        "output1": "climate_plot_{rank}.png"
+        "input1": "corvallis_current_year.csv",
+        "input2": "corvallis_10yr_average.csv",
+        "output1": "corvallis_climate_plot_{rank}.png"
       },
       "InvokeNext": []
     }
   },
   "ActionContainers": {
     "download-ghcnd-data": "ghcr.io/faasr/github-actions-python:latest",
-    "create-climate-plot": "ghcr.io/faasr/github-actions-python:latest"
+    "generate-climate-plot": "ghcr.io/faasr/github-actions-python:latest"
   },
   "ComputeServers": {
     "GH": {
@@ -57,14 +57,15 @@
   },
   "FunctionGitRepo": {
     "download_ghcnd_data": "renatof/FaaSr-CURATE/main/functions/download_ghcnd_data.py",
-    "create_climate_plot": "renatof/FaaSr-CURATE/main/functions/create_climate_plot.py"
+    "generate_climate_plot": "renatof/FaaSr-CURATE/main/functions/generate_climate_plot.py"
   },
   "PyPIPackageDownloads": {
     "download_ghcnd_data": [
       "meteostat",
-      "pandas"
+      "pandas",
+      "requests"
     ],
-    "create_climate_plot": [
+    "generate_climate_plot": [
       "pandas",
       "matplotlib"
     ]
