@@ -16,7 +16,8 @@
         "output2": "corvallis_10yr_average.csv"
       },
       "InvokeNext": [
-        "generate-climate-plot(3)"
+        "generate-climate-plot(3)",
+        "fit-tmax-regression"
       ]
     },
     "generate-climate-plot": {
@@ -30,11 +31,40 @@
         "output1": "corvallis_climate_plot_{rank}.png"
       },
       "InvokeNext": []
+    },
+    "fit-tmax-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "fit_tmax_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year.csv",
+        "output1": "corvallis_tmax_regression.csv",
+        "output2": "corvallis_tmax_regression_summary.csv"
+      },
+      "InvokeNext": [
+        "plot-tmax-regression"
+      ]
+    },
+    "plot-tmax-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_tmax_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year.csv",
+        "input2": "corvallis_tmax_regression.csv",
+        "input3": "corvallis_tmax_regression_summary.csv",
+        "output1": "corvallis_tmax_regression_plot.png"
+      },
+      "InvokeNext": []
     }
   },
   "ActionContainers": {
     "download-ghcnd-data": "ghcr.io/faasr/github-actions-python:latest",
-    "generate-climate-plot": "ghcr.io/faasr/github-actions-python:latest"
+    "generate-climate-plot": "ghcr.io/faasr/github-actions-python:latest",
+    "fit-tmax-regression": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-tmax-regression": "ghcr.io/faasr/github-actions-python:latest"
   },
   "ComputeServers": {
     "GH": {
@@ -57,7 +87,9 @@
   },
   "FunctionGitRepo": {
     "download_ghcnd_data": "renatof/FaaSr-CURATE/main/functions/download_ghcnd_data.py",
-    "generate_climate_plot": "renatof/FaaSr-CURATE/main/functions/generate_climate_plot.py"
+    "generate_climate_plot": "renatof/FaaSr-CURATE/main/functions/generate_climate_plot.py",
+    "fit_tmax_regression": "renatof/FaaSr-CURATE/main/functions/fit_tmax_regression.py",
+    "plot_tmax_regression": "renatof/FaaSr-CURATE/main/functions/plot_tmax_regression.py"
   },
   "PyPIPackageDownloads": {
     "download_ghcnd_data": [
@@ -66,6 +98,14 @@
       "requests"
     ],
     "generate_climate_plot": [
+      "pandas",
+      "matplotlib"
+    ],
+    "fit_tmax_regression": [
+      "pandas",
+      "scipy"
+    ],
+    "plot_tmax_regression": [
       "pandas",
       "matplotlib"
     ]
