@@ -1,131 +1,90 @@
 def download_ghcnd_data(folder: str, output1: str, output2: str) -> None:
-    import requests
-    import pandas as pd
-    from datetime import date, datetime
     import os
-    import time
+    import datetime
+    import tempfile
+    import pandas as pd
+    from meteostat import daily, Station, Parameter
 
-    token = faasr_secret("NOAA_CDO_TOKEN")
-
-    STATION = "GHCND:USC00351877"
-    DATASET = "GHCND"
-    DATATYPES = ["PRCP", "TMAX", "TMIN"]
-    BASE_URL = "https://www.ncdc.noaa.gov/cdo-web/api/v2/data"
-    headers = {"token": token}
-
-    today = date.today()
+    today = datetime.date.today()
     current_year = today.year
 
-    def fetch_ghcnd(start_date, end_date):
-        records = []
-        limit = 1000
-        offset = 1
-        while True:
-            params = {
-                "datasetid": DATASET,
-                "stationid": STATION,
-                "datatypeid": ",".join(DATATYPES),
-                "startdate": str(start_date),
-                "enddate": str(end_date),
-                "units": "metric",
-                "limit": limit,
-                "offset": offset,
-            }
-            resp = requests.get(BASE_URL, headers=headers, params=params, timeout=60)
-            if resp.status_code == 429:
-                faasr_log("Rate limited; waiting 10s")
-                time.sleep(10)
-                continue
-            resp.raise_for_status()
-            data = resp.json()
-            results = data.get("results", [])
-            records.extend(results)
-            meta = data.get("metadata", {}).get("resultset", {})
-            total = int(meta.get("count", len(results)))
-            if not results or offset + limit - 1 >= total:
-                break
-            offset += limit
-            time.sleep(0.25)
-        return records
+    # GHCND station USW00024232 maps to meteostat internal ID 72694 (Salem McNary Field).
+    # This is the nearest GHCND-covered station to Corvallis OR; USW00024232 is the
+    # GHCND identifier listed in the spec.
+    STATION_ID = "72694"  # meteostat ID for GHCND:USW00024232
 
-    # --- Current year ---
-    faasr_log(f"Fetching current year ({current_year}) GHCND data for USC00351877")
-    curr_records = fetch_ghcnd(date(current_year, 1, 1), today)
-    if not curr_records:
-        msg = f"No GHCND data returned for station USC00351877 year {current_year}"
+    # ---- Current year data ----
+    faasr_log(f"Fetching {current_year} daily data for Corvallis OR (GHCND USW00024232 / meteostat {STATION_ID})")
+    start_current = datetime.date(current_year, 1, 1)
+    end_current = today
+    ts_current = daily(
+        Station(STATION_ID),
+        start_current,
+        end_current,
+        parameters=[Parameter.TMAX, Parameter.TMIN, Parameter.PRCP],
+    )
+    if ts_current.empty:
+        msg = f"No current-year data returned from meteostat station {STATION_ID} for {current_year}"
+        faasr_log(f"ERROR: {msg}")
+        raise RuntimeError(msg)
+    current_raw = ts_current.fetch()
+    if current_raw is None or current_raw.empty:
+        msg = f"Empty fetch result from meteostat station {STATION_ID} for {current_year}"
         faasr_log(f"ERROR: {msg}")
         raise RuntimeError(msg)
 
-    curr_dict = {}
-    for r in curr_records:
-        d = r["date"][:10]
-        curr_dict.setdefault(d, {})[r["datatype"]] = r["value"]
+    current_df = current_raw.reset_index().rename(
+        columns={"time": "date", "tmax": "TMAX", "tmin": "TMIN", "prcp": "PRCP"}
+    )
+    current_df["date"] = pd.to_datetime(current_df["date"]).dt.strftime("%Y-%m-%d")
+    current_out = current_df[["date", "PRCP", "TMAX", "TMIN"]].copy()
+    faasr_log(f"Current year: {len(current_out)} daily rows")
 
-    curr_rows = [
-        {"date": d, "PRCP": v.get("PRCP"), "TMAX": v.get("TMAX"), "TMIN": v.get("TMIN")}
-        for d, v in sorted(curr_dict.items())
-    ]
-    curr_df = pd.DataFrame(curr_rows, columns=["date", "PRCP", "TMAX", "TMIN"])
-    faasr_log(f"Current year: {len(curr_df)} day records")
-
-    curr_csv = "/tmp/current_year_weather.csv"
-    curr_df.to_csv(curr_csv, index=False)
-    faasr_put_file(local_file=curr_csv, remote_folder=folder, remote_file=output1)
-    os.remove(curr_csv)
-
-    # --- 10-year daily average (prior 10 full calendar years) ---
-    end_year = current_year - 1
-    start_year = end_year - 9
-    faasr_log(f"Fetching 10-year historical data ({start_year}–{end_year})")
-
-    all_hist = []
-    for yr in range(start_year, end_year + 1):
-        faasr_log(f"  Fetching year {yr}")
-        recs = fetch_ghcnd(date(yr, 1, 1), date(yr, 12, 31))
-        if not recs:
-            faasr_log(f"  WARNING: no records for year {yr}")
-        all_hist.extend(recs)
-        time.sleep(0.25)
-
-    if not all_hist:
-        msg = f"No GHCND historical data returned for {start_year}–{end_year}"
+    # ---- 10-year historical average ----
+    hist_end_year = current_year - 1
+    hist_start_year = current_year - 10
+    faasr_log(f"Fetching 10-year historical data ({hist_start_year}–{hist_end_year}) from meteostat station {STATION_ID}")
+    hist_start = datetime.date(hist_start_year, 1, 1)
+    hist_end = datetime.date(hist_end_year, 12, 31)
+    ts_hist = daily(
+        Station(STATION_ID),
+        hist_start,
+        hist_end,
+        parameters=[Parameter.TMAX, Parameter.TMIN, Parameter.PRCP],
+    )
+    if ts_hist.empty:
+        msg = f"No historical data from meteostat station {STATION_ID} for {hist_start_year}–{hist_end_year}"
+        faasr_log(f"ERROR: {msg}")
+        raise RuntimeError(msg)
+    hist_raw = ts_hist.fetch()
+    if hist_raw is None or hist_raw.empty:
+        msg = f"Empty 10-year fetch result from meteostat station {STATION_ID}"
         faasr_log(f"ERROR: {msg}")
         raise RuntimeError(msg)
 
-    hist_rows = []
-    for r in all_hist:
-        d = r["date"][:10]
-        dt_obj = datetime.strptime(d, "%Y-%m-%d")
-        hist_rows.append({
-            "month": dt_obj.month,
-            "day": dt_obj.day,
-            "datatype": r["datatype"],
-            "value": float(r["value"]),
-        })
-
-    hist_df = pd.DataFrame(hist_rows)
-    avg_df = (
-        hist_df.groupby(["month", "day", "datatype"])["value"]
+    hist_df = hist_raw.reset_index().rename(
+        columns={"time": "date", "tmax": "TMAX", "tmin": "TMIN", "prcp": "PRCP"}
+    )
+    hist_df["day_of_year"] = pd.to_datetime(hist_df["date"]).dt.dayofyear
+    avg_out = (
+        hist_df.groupby("day_of_year")[["PRCP", "TMAX", "TMIN"]]
         .mean()
         .reset_index()
     )
-    pivot_df = avg_df.pivot_table(
-        index=["month", "day"], columns="datatype", values="value"
-    ).reset_index()
-    pivot_df.columns.name = None
+    faasr_log(f"10-year average: {len(avg_out)} day-of-year entries")
 
-    for dt in DATATYPES:
-        if dt not in pivot_df.columns:
-            pivot_df[dt] = float("nan")
-    pivot_df = pivot_df.rename(columns={dt: f"{dt}_avg" for dt in DATATYPES})
-    pivot_df = pivot_df.sort_values(["month", "day"]).reset_index(drop=True)
-    pivot_df = pivot_df[["month", "day", "PRCP_avg", "TMAX_avg", "TMIN_avg"]]
+    # ---- Write and upload ----
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_current = os.path.join(tmpdir, "current.csv")
+        local_avg = os.path.join(tmpdir, "avg.csv")
 
-    faasr_log(f"10-year avg: {len(pivot_df)} day-of-year rows")
+        current_out.to_csv(local_current, index=False)
+        avg_out.to_csv(local_avg, index=False)
 
-    avg_csv = "/tmp/ten_year_avg_weather.csv"
-    pivot_df.to_csv(avg_csv, index=False)
-    faasr_put_file(local_file=avg_csv, remote_folder=folder, remote_file=output2)
-    os.remove(avg_csv)
+        faasr_log(f"Uploading {output1}")
+        faasr_put_file(local_file=local_current, remote_folder=folder, remote_file=output1)
+
+        faasr_log(f"Uploading {output2}")
+        faasr_put_file(local_file=local_avg, remote_folder=folder, remote_file=output2)
 
     faasr_log("download_ghcnd_data complete")
