@@ -1,0 +1,78 @@
+{
+  "FunctionInvoke": "download-weather-data",
+  "WorkflowName": "noaa-ghcnd-corvallis-weather-viz",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "download-weather-data": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "download_weather_data",
+      "Arguments": {
+        "folder": "workflow_data",
+        "output1": "corvallis_current_year_weather.csv",
+        "output2": "corvallis_10yr_avg_weather.csv"
+      },
+      "InvokeNext": [
+        "plot-weather-comparisons(3)"
+      ]
+    },
+    "plot-weather-comparisons": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_weather_comparisons",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year_weather.csv",
+        "input2": "corvallis_10yr_avg_weather.csv",
+        "output1": "corvallis_precipitation_comparison_{rank}.png",
+        "output2": "corvallis_tmax_comparison_{rank}.png",
+        "output3": "corvallis_tmin_comparison_{rank}.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "download-weather-data": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-weather-comparisons": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "download_weather_data": "renatof/FaaSr-CURATE/main/functions/download_weather_data.py",
+    "plot_weather_comparisons": "renatof/FaaSr-CURATE/main/functions/plot_weather_comparisons.py"
+  },
+  "PyPIPackageDownloads": {
+    "download_weather_data": [
+      "meteostat",
+      "pandas",
+      "requests"
+    ],
+    "plot_weather_comparisons": [
+      "matplotlib",
+      "pandas"
+    ]
+  },
+  "Secrets": [
+    "NOAA_API_TOKEN"
+  ]
+}
