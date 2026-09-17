@@ -1,6 +1,6 @@
 import os
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import requests
 import pandas as pd
 
@@ -75,9 +75,28 @@ def download_weather_data(folder: str, output1: str, output2: str) -> None:
         ["PRCP", "TMAX", "TMIN"],
     )
     if not cy_records:
-        raise RuntimeError(
-            f"No current-year GHCND records returned for station {STATION_ID} "
-            f"from {cy_start} to {cy_end}"
+        trimmed_end = (today - timedelta(days=30)).strftime("%Y-%m-%d")
+        faasr_log(
+            f"No records for {cy_start} to {cy_end}; retrying with end_date={trimmed_end} "
+            f"to avoid CDO recency lag"
+        )
+        cy_records = _noaa_fetch(
+            token, "GHCND", f"GHCND:{STATION_ID}",
+            cy_start, trimmed_end,
+            ["PRCP", "TMAX", "TMIN"],
+        )
+        if not cy_records:
+            raise RuntimeError(
+                f"No current-year GHCND records returned for station {STATION_ID} "
+                f"from {cy_start} to {trimmed_end}. "
+                f"The CDO endpoint has not yet populated current-year data for station "
+                f"{STATION_ID}. GHCND records are typically delayed by days to weeks. "
+                f"Suggested alternative: use the NOAA GHCN Daily flat-file endpoint at "
+                f"https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_station/"
+            )
+        faasr_log(
+            f"Warning: end date trimmed to {trimmed_end} to avoid CDO recency lag for "
+            f"station {STATION_ID}"
         )
     cy_df = _records_to_daily_df(cy_records)
     faasr_log(f"Current-year rows: {len(cy_df)}")
