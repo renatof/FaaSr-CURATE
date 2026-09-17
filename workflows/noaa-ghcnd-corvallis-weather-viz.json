@@ -16,8 +16,34 @@
         "output2": "corvallis_10yr_avg_weather.csv"
       },
       "InvokeNext": [
+        "fit-tmax-regression",
         "plot-weather-comparisons(3)"
       ]
+    },
+    "fit-tmax-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "fit_tmax_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year_weather.csv",
+        "output1": "corvallis_tmax_regression_params.csv"
+      },
+      "InvokeNext": [
+        "plot-tmax-regression"
+      ]
+    },
+    "plot-tmax-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_tmax_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year_weather.csv",
+        "input2": "corvallis_tmax_regression_params.csv",
+        "output1": "corvallis_tmax_regression_plot.png"
+      },
+      "InvokeNext": []
     },
     "plot-weather-comparisons": {
       "FaaSServer": "GH",
@@ -36,6 +62,8 @@
   },
   "ActionContainers": {
     "download-weather-data": "ghcr.io/faasr/github-actions-python:latest",
+    "fit-tmax-regression": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-tmax-regression": "ghcr.io/faasr/github-actions-python:latest",
     "plot-weather-comparisons": "ghcr.io/faasr/github-actions-python:latest"
   },
   "ComputeServers": {
@@ -59,6 +87,8 @@
   },
   "FunctionGitRepo": {
     "download_weather_data": "renatof/FaaSr-CURATE/main/functions/download_weather_data.py",
+    "fit_tmax_regression": "renatof/FaaSr-CURATE/main/functions/fit_tmax_regression.py",
+    "plot_tmax_regression": "renatof/FaaSr-CURATE/main/functions/plot_tmax_regression.py",
     "plot_weather_comparisons": "renatof/FaaSr-CURATE/main/functions/plot_weather_comparisons.py"
   },
   "PyPIPackageDownloads": {
@@ -66,6 +96,15 @@
       "meteostat",
       "pandas",
       "requests"
+    ],
+    "fit_tmax_regression": [
+      "numpy",
+      "pandas"
+    ],
+    "plot_tmax_regression": [
+      "matplotlib",
+      "numpy",
+      "pandas"
     ],
     "plot_weather_comparisons": [
       "matplotlib",
