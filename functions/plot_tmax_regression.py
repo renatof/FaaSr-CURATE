@@ -1,102 +1,59 @@
-def plot_tmax_regression(folder: str, input1: str, input2: str, input3: str, output1: str) -> None:
-    import os
-    import datetime
-    import tempfile
-    import pandas as pd
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
+import os
+import tempfile
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+
+def plot_tmax_regression(folder: str, input1: str, input2: str, output1: str) -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
-        local_current  = os.path.join(tmpdir, "current.csv")
-        local_fitted   = os.path.join(tmpdir, "fitted.csv")
-        local_summary  = os.path.join(tmpdir, "summary.csv")
+        local_weather = os.path.join(tmpdir, "current_weather.csv")
+        local_params = os.path.join(tmpdir, "params.csv")
 
-        faasr_get_file(local_file=local_current,  remote_folder=folder, remote_file=input1)
-        faasr_get_file(local_file=local_fitted,   remote_folder=folder, remote_file=input2)
-        faasr_get_file(local_file=local_summary,  remote_folder=folder, remote_file=input3)
+        faasr_get_file(local_file=local_weather, remote_folder=folder, remote_file=input1)
+        faasr_get_file(local_file=local_params, remote_folder=folder, remote_file=input2)
 
-        obs = pd.read_csv(local_current, parse_dates=["date"])
-        obs = obs.dropna(subset=["TMAX"])
-        obs["day_of_year"] = obs["date"].dt.dayofyear
-        obs["month"]       = obs["date"].dt.month
+        df = pd.read_csv(local_weather, parse_dates=["date"])
+        df = df.dropna(subset=["TMAX"])
+        if df.empty:
+            raise RuntimeError("No valid TMAX observations found in current-year weather CSV")
 
-        fitted  = pd.read_csv(local_fitted)
-        summary = pd.read_csv(local_summary)
+        df["day_of_year"] = df["date"].dt.dayofyear
+        x = df["day_of_year"].values.astype(float)
+        y = df["TMAX"].values.astype(float)
 
-        slope     = float(summary["slope"].iloc[0])
-        intercept = float(summary["intercept"].iloc[0])
-        r_value   = float(summary["r_value"].iloc[0])
-        r2        = r_value ** 2
+        params = pd.read_csv(local_params)
+        slope = float(params["slope"].iloc[0])
+        intercept = float(params["intercept"].iloc[0])
+        r_squared = float(params["r_squared"].iloc[0])
 
-        current_year = obs["date"].dt.year.iloc[0]
-        faasr_log(f"Plotting TMAX regression for {current_year}: slope={slope:.4f}, intercept={intercept:.4f}, r2={r2:.4f}")
+        faasr_log(f"Plotting {len(x)} TMAX observations with regression line")
 
-        # Qualitative colormap — one colour per calendar month (1–12)
-        MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-        cmap = matplotlib.colormaps["tab20"].resampled(12)
-        month_colors = {m: cmap(m - 1) for m in range(1, 13)}
+        x_line = np.array([x.min(), x.max()])
+        y_line = slope * x_line + intercept
 
-        fig, ax = plt.subplots(figsize=(14, 5))
+        sign = "+" if intercept >= 0 else "-"
+        eq_label = f"y = {slope:.4f}·x {sign} {abs(intercept):.4f}\n$R^2$ = {r_squared:.4f}"
 
-        # Scatter: one series per month so legend shows month labels
-        for month in sorted(obs["month"].unique()):
-            mask = obs["month"] == month
-            ax.scatter(
-                obs.loc[mask, "day_of_year"],
-                obs.loc[mask, "TMAX"],
-                color=month_colors[month],
-                s=30,
-                alpha=0.85,
-                label=MONTH_ABBR[month - 1],
-                zorder=3,
-            )
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.scatter(x, y, s=18, alpha=0.6, color="steelblue", label="Observed TMAX")
+        ax.plot(x_line, y_line, color="tomato", linewidth=2, label=f"Regression fit\n{eq_label}")
 
-        # OLS regression line in red
-        eq_label = (
-            f"TMAX = {slope:.2f}·DOY + {intercept:.2f}"
-            f"\n$R^2$ = {r2:.4f}"
-        )
-        ax.plot(
-            fitted["day_of_year"],
-            fitted["TMAX_fitted"],
-            color="red",
-            linewidth=2.0,
-            label=eq_label,
-            zorder=4,
-        )
+        ax.set_title("Corvallis OR — Current Year TMAX with Linear Regression Fit")
+        ax.set_xlabel("Day of Year")
+        ax.set_ylabel("Max Temperature (°C)")
+        ax.legend(fontsize=9)
+        ax.grid(True, linestyle="--", alpha=0.4)
 
-        # X-axis: month abbreviations at the first DOY of each month
-        doy_set = set(obs["day_of_year"].values)
-        month_ticks  = []
-        month_labels = []
-        for m in range(1, 13):
-            try:
-                d = datetime.date(current_year, m, 1)
-                doy = d.timetuple().tm_yday
-                if doy in doy_set or m == obs["month"].min():
-                    month_ticks.append(doy)
-                    month_labels.append(d.strftime("%b"))
-            except ValueError:
-                pass
-        ax.set_xticks(month_ticks)
-        ax.set_xticklabels(month_labels, fontsize=9)
-
-        ax.set_xlabel("Month", fontsize=11)
-        ax.set_ylabel("Max Temperature (°C)", fontsize=11)
-        ax.set_title(f"Corvallis OR — TMAX Linear Regression: {current_year}", fontsize=13)
-
-        ax.grid(which="both", linestyle=":", alpha=0.4)
-
-        ax.legend(fontsize=9, ncol=2, loc="upper left")
         fig.tight_layout()
 
-        local_png = os.path.join(tmpdir, output1)
-        fig.savefig(local_png, dpi=150, bbox_inches="tight")
+        local_png = os.path.join(tmpdir, "plot.png")
+        fig.savefig(local_png, dpi=150)
         plt.close(fig)
 
-        faasr_log(f"Uploading {output1}")
         faasr_put_file(local_file=local_png, remote_folder=folder, remote_file=output1)
 
     faasr_log("plot_tmax_regression complete")
