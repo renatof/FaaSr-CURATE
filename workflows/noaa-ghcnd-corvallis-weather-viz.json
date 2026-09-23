@@ -17,6 +17,7 @@
       },
       "InvokeNext": [
         "fit-tmax-regression",
+        "fit-prcp-regression",
         "plot-weather-comparisons(3)"
       ]
     },
@@ -45,6 +46,31 @@
       },
       "InvokeNext": []
     },
+    "fit-prcp-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "fit_prcp_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year_weather.csv",
+        "output1": "corvallis_prcp_regression_params.csv"
+      },
+      "InvokeNext": [
+        "plot-prcp-regression"
+      ]
+    },
+    "plot-prcp-regression": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_prcp_regression",
+      "Arguments": {
+        "folder": "workflow_data",
+        "input1": "corvallis_current_year_weather.csv",
+        "input2": "corvallis_prcp_regression_params.csv",
+        "output1": "corvallis_prcp_regression_plot.png"
+      },
+      "InvokeNext": []
+    },
     "plot-weather-comparisons": {
       "FaaSServer": "GH",
       "Type": "Python",
@@ -64,6 +90,8 @@
     "download-weather-data": "ghcr.io/faasr/github-actions-python:latest",
     "fit-tmax-regression": "ghcr.io/faasr/github-actions-python:latest",
     "plot-tmax-regression": "ghcr.io/faasr/github-actions-python:latest",
+    "fit-prcp-regression": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-prcp-regression": "ghcr.io/faasr/github-actions-python:latest",
     "plot-weather-comparisons": "ghcr.io/faasr/github-actions-python:latest"
   },
   "ComputeServers": {
@@ -89,6 +117,8 @@
     "download_weather_data": "renatof/FaaSr-CURATE/main/functions/download_weather_data.py",
     "fit_tmax_regression": "renatof/FaaSr-CURATE/main/functions/fit_tmax_regression.py",
     "plot_tmax_regression": "renatof/FaaSr-CURATE/main/functions/plot_tmax_regression.py",
+    "fit_prcp_regression": "renatof/FaaSr-CURATE/main/functions/fit_prcp_regression.py",
+    "plot_prcp_regression": "renatof/FaaSr-CURATE/main/functions/plot_prcp_regression.py",
     "plot_weather_comparisons": "renatof/FaaSr-CURATE/main/functions/plot_weather_comparisons.py"
   },
   "PyPIPackageDownloads": {
@@ -102,6 +132,15 @@
       "pandas"
     ],
     "plot_tmax_regression": [
+      "matplotlib",
+      "numpy",
+      "pandas"
+    ],
+    "fit_prcp_regression": [
+      "numpy",
+      "pandas"
+    ],
+    "plot_prcp_regression": [
       "matplotlib",
       "numpy",
       "pandas"
