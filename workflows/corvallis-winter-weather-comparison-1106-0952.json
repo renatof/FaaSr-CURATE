@@ -1,0 +1,87 @@
+{
+  "FunctionInvoke": "download-ghcn-data",
+  "WorkflowName": "corvallis-winter-weather-comparison-1106-0952",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "download-ghcn-data": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "download_ghcn_data",
+      "Arguments": {
+        "folder": "corvallis_winter_weather-1106-0952",
+        "output1": "USC00351862_ghcn_daily.csv"
+      },
+      "InvokeNext": [
+        "process-weather-variable(3)"
+      ]
+    },
+    "process-weather-variable": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "process_weather_variable",
+      "Arguments": {
+        "folder": "corvallis_winter_weather-1106-0952",
+        "input1": "USC00351862_ghcn_daily.csv",
+        "output1": "process_result_{rank}.csv"
+      },
+      "InvokeNext": [
+        "plot-weather-comparison"
+      ]
+    },
+    "plot-weather-comparison": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "plot_weather_comparison",
+      "Arguments": {
+        "folder": "corvallis_winter_weather-1106-0952",
+        "input1": "process_result_{rank}.csv",
+        "output1": "corvallis_winter_comparison.png"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "download-ghcn-data": "ghcr.io/faasr/github-actions-python:latest",
+    "process-weather-variable": "ghcr.io/faasr/github-actions-python:latest",
+    "plot-weather-comparison": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "download_ghcn_data": "renatof/FaaSr-CURATE/main/functions/corvallis-winter-weather-comparison-1106-0952/download_ghcn_data.py",
+    "plot_weather_comparison": "renatof/FaaSr-CURATE/main/functions/corvallis-winter-weather-comparison-1106-0952/plot_weather_comparison.py",
+    "process_weather_variable": "renatof/FaaSr-CURATE/main/functions/corvallis-winter-weather-comparison-1106-0952/process_weather_variable.py"
+  },
+  "PyPIPackageDownloads": {
+    "download_ghcn_data": [
+      "requests"
+    ],
+    "process_weather_variable": [
+      "pandas"
+    ],
+    "plot_weather_comparison": [
+      "pandas",
+      "matplotlib"
+    ]
+  }
+}
