@@ -1,0 +1,113 @@
+{
+  "FunctionInvoke": "locate-site",
+  "WorkflowName": "abby-soil-moisture-fungi-1107-0815",
+  "DefaultDataStore": "S3",
+  "LoggingDataStore": "S3",
+  "FaaSrLog": "FaaSrLog",
+  "InvocationIDFromDate": "%Y-%m-%d-%H-%M-%S",
+  "ActionList": {
+    "locate-site": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "locate_site",
+      "Arguments": {
+        "folder": "abby_soil_moisture_fungi-1107-0815",
+        "output1": "site_metadata.json"
+      },
+      "InvokeNext": [
+        "compute-monthly-soil-moisture",
+        "fetch-inaturalist-fungi"
+      ]
+    },
+    "compute-monthly-soil-moisture": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "compute_monthly_soil_moisture",
+      "Arguments": {
+        "folder": "abby_soil_moisture_fungi-1107-0815",
+        "input1": "site_metadata.json",
+        "output1": "monthly_soil_moisture.csv"
+      },
+      "InvokeNext": [
+        "align-and-report"
+      ]
+    },
+    "fetch-inaturalist-fungi": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "fetch_inaturalist_fungi",
+      "Arguments": {
+        "folder": "abby_soil_moisture_fungi-1107-0815",
+        "input1": "site_metadata.json",
+        "output1": "monthly_fungi_counts.csv"
+      },
+      "InvokeNext": [
+        "align-and-report"
+      ]
+    },
+    "align-and-report": {
+      "FaaSServer": "GH",
+      "Type": "Python",
+      "FunctionName": "align_and_report",
+      "Arguments": {
+        "folder": "abby_soil_moisture_fungi-1107-0815",
+        "input1": "monthly_soil_moisture.csv",
+        "input2": "monthly_fungi_counts.csv",
+        "output1": "abby_soil_moisture_fungi_plot.png",
+        "output2": "abby_monthly_summary.csv"
+      },
+      "InvokeNext": []
+    }
+  },
+  "ActionContainers": {
+    "locate-site": "ghcr.io/faasr/github-actions-python:latest",
+    "compute-monthly-soil-moisture": "ghcr.io/faasr/github-actions-python:latest",
+    "fetch-inaturalist-fungi": "ghcr.io/faasr/github-actions-python:latest",
+    "align-and-report": "ghcr.io/faasr/github-actions-python:latest"
+  },
+  "ComputeServers": {
+    "GH": {
+      "FaaSType": "GitHubActions",
+      "UserName": "renatof",
+      "ActionRepoName": "FaaSr-CURATE",
+      "Branch": "main",
+      "UseSecretStore": true
+    }
+  },
+  "DataStores": {
+    "S3": {
+      "Endpoint": "https://s3.amazonaws.com",
+      "Bucket": "faasr-bucket-0005",
+      "Region": "us-east-1",
+      "AccessKey": "S3_AccessKey",
+      "SecretKey": "S3_SecretKey",
+      "Writable": "TRUE"
+    }
+  },
+  "FunctionGitRepo": {
+    "align_and_report": "renatof/FaaSr-CURATE/main/functions/abby-soil-moisture-fungi-1107-0815/align_and_report.py",
+    "compute_monthly_soil_moisture": "renatof/FaaSr-CURATE/main/functions/abby-soil-moisture-fungi-1107-0815/compute_monthly_soil_moisture.py",
+    "fetch_inaturalist_fungi": "renatof/FaaSr-CURATE/main/functions/abby-soil-moisture-fungi-1107-0815/fetch_inaturalist_fungi.py",
+    "locate_site": "renatof/FaaSr-CURATE/main/functions/abby-soil-moisture-fungi-1107-0815/locate_site.py"
+  },
+  "PyPIPackageDownloads": {
+    "locate_site": [
+      "requests"
+    ],
+    "compute_monthly_soil_moisture": [
+      "requests",
+      "pandas"
+    ],
+    "fetch_inaturalist_fungi": [
+      "requests",
+      "pandas"
+    ],
+    "align_and_report": [
+      "pandas",
+      "matplotlib"
+    ]
+  },
+  "Secrets": [
+    "NEON_API_TOKEN"
+  ]
+}
